@@ -24,9 +24,9 @@
 namespace newdigate {
 
 audiosample * flashloader::loadSample(char *filename ) {
+    Serial.printf("Reading %s\n", filename);
     File f = SD.open(filename, O_READ);
     if (f) {
-
         if (f.size() < _bytesavailable) {
             int16_t * sampleStart = (int16_t *)(memory_begin + _head);
 
@@ -34,22 +34,26 @@ audiosample * flashloader::loadSample(char *filename ) {
             
             while (f.available()) {
                 size_t bytesRead = f.read(memory_begin + _head + total_read/4, flashloader_default_sd_buffersize);
-                Serial.printf("read %d bytes\n", bytesRead);
+                if (bytesRead == -1)
+                    break;
                 total_read += bytesRead;
             }
             _head += total_read/4;
+            _bytesavailable -= total_read;
 
             audiosample *sample = new audiosample();
             sample->sampledata = sampleStart;
             sample->samplesize = f.size();
                     
-            Serial.printf("sample start %x\n", (uint32_t)sampleStart);
-            Serial.printf("sample size %d\n", sample->samplesize);
+            Serial.printf("\tsample start %x\n", (uint32_t)sampleStart);
+            Serial.printf("\tsample size %d\n", sample->samplesize);
+            Serial.printf("\tavailable: %d\n", _bytesavailable);
+
             return sample; 
         }       
     }
 
-    Serial.printf("not found %s bytes\n", filename);
+    Serial.printf("not found %s\n", filename);
     return nullptr;
 }
 

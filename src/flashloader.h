@@ -42,9 +42,10 @@ namespace newdigate {
 
         flashloader() {
             uint8_t size = external_psram_size;
-            _bytesavailable = size * 1048576;
-            memory_begin = (uint32_t *)(0x70000000);
-            memory_end = (uint32_t *)(0x70000000 + _bytesavailable);
+            _bytesavailable = size * 1048576 - 0x4000;
+            memory_begin = (uint32_t *)(0x70004000);
+            memory_end = (uint32_t *)(0x70004000 + _bytesavailable);
+            Serial.printf("SerialFlash for samples: %d\n", _bytesavailable);
         }
 
         uint32_t _bytesavailable=0;
