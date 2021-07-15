@@ -33,7 +33,9 @@ audiosample * flashloader::loadSample(char *filename ) {
             uint32_t total_read = 0;
             
             while (f.available()) {
+                noInterrupts();
                 size_t bytesRead = f.read(memory_begin + _head + total_read/4, flashloader_default_sd_buffersize);
+                interrupts();
                 if (bytesRead == -1)
                     break;
                 total_read += bytesRead;
