@@ -50,7 +50,7 @@ namespace newdigate {
         }
 
         uint32_t _bytesavailable=0;
-        audiosample * loadSample(char *filename );
+        audiosample * loadSample(const char *filename );
         uint32_t *memory_begin, *memory_end;
         uint32_t _head = 0;
     };

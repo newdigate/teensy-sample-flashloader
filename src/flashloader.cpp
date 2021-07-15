@@ -23,7 +23,7 @@
 
 namespace newdigate {
 
-audiosample * flashloader::loadSample(char *filename ) {
+audiosample * flashloader::loadSample(const char *filename ) {
     Serial.printf("Reading %s\n", filename);
     File f = SD.open(filename, O_READ);
     if (f) {
