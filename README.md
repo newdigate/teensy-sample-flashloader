@@ -1,4 +1,4 @@
-# teensy-sample-flashloader
+# teensy sample flashloader
 [![lib-teensy41](https://github.com/newdigate/teensy-sample-flashloader/actions/workflows/teensy41_lib.yml/badge.svg)](https://github.com/newdigate/teensy-sample-flashloader/actions/workflows/teensy41_lib.yml)
 [![example-loadsample](https://github.com/newdigate/teensy-sample-flashloader/actions/workflows/teensy41_loadsample.yml/badge.svg)](https://github.com/newdigate/teensy-sample-flashloader/actions/workflows/teensy41_loadsample.yml)
 
