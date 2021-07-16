@@ -1,5 +1,8 @@
 # teensy-sample-flashloader
-load  audio samples to flash from microSD card
+[![lib-teensy41](https://github.com/newdigate/teensy-sample-flashloader/actions/workflows/teensy41_lib.yml/badge.svg)](https://github.com/newdigate/teensy-sample-flashloader/actions/workflows/teensy41_lib.yml)
+[![example-loadsample](https://github.com/newdigate/teensy-sample-flashloader/actions/workflows/teensy41_loadsample.yml/badge.svg)](https://github.com/newdigate/teensy-sample-flashloader/actions/workflows/teensy41_loadsample.yml)
+
+load audio samples from micro-SD card to external flash memory on teensy 4.1
 
 ``` c++
 #include <Arduino.h>
