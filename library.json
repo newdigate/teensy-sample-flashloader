@@ -1,0 +1,38 @@
+{
+    "name": "TeensyAudioFlashLoader",
+    "frameworks": "Arduino",
+    "platforms": "Teensy",
+    "keywords": "sound, audio, sd, flash, sample",
+    "description": "utility to load audio samples from uSD card to external flash ram on teensy 4.1",
+    "url": "https://github.com/newdigate/teensy-sample-flashloader",
+    "version": "1.0.7",
+    "export": {
+      "exclude": [
+        ".vscode",
+        ".github",
+        "extras",
+        "test",
+        "cmake",
+        "docs"
+      ]
+    },
+    "authors":
+    {
+      "name": "Nic Newdigate",
+      "maintainer": true
+    },
+    "repository":
+    {
+      "type": "git",
+      "url": "https://github.com/newdigate/teensy-sample-flashloader"
+    },
+    "dependencies":
+    {
+      "name": "Audio",
+      "frameworks": "arduino"
+    },
+    "examples": [
+      "examples/*/*.ino",
+      "examples/*/*/*.ino"
+    ]
+  }
