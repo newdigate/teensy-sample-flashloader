@@ -82,7 +82,7 @@ jobs:
         repository: PaulStoffregen/LittleFS.git
         path: deps/LittleFS
         fetch-depth: 1
-        ref: master
+        ref: main
 
     - uses: actions/checkout@v2
       with:
