@@ -34,11 +34,13 @@ void setup() {
     sample = loader.loadSample("KICK.RAW");
 }
 
+const uint16_t numChannels = 1; // 1 = MONO, 2 = STEREO
+
 void loop() {
     unsigned currentMillis = millis();
     if (currentMillis > lastSamplePlayed + 500) {
         if (!rraw_a1.isPlaying()) {
-            rraw_a1.play(sample->sampledata, sample->samplesize/2);
+            rraw_a1.playRaw(sample->sampledata, sample->samplesize/2, numChannels);
             lastSamplePlayed = currentMillis;
 
             Serial.print("Memory: ");

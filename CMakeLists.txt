@@ -5,6 +5,6 @@ import_arduino_library(cores ${COREPATH} avr debug util)
 import_arduino_library(SPI ${DEPSPATH}/SPI)
 import_arduino_library(SdFat ${DEPSPATH}/SdFat/src common DigitalIO ExFatLib FatLib FsLib iostream SdCard SpiDriver)
 import_arduino_library(SD ${DEPSPATH}/SD/src)
-
+import_arduino_library(LittleFS ${DEPSPATH}/LittleFS/src)
 add_subdirectory(src)
 add_subdirectory(examples/loadsample)
