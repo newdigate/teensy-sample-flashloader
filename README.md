@@ -4,7 +4,7 @@
 
 load .RAW audio samples from micro-SD card to external flash memory on teensy 4.1
 
-NB: This library currently only works with .RAW audio files - .WAV files are not supported. Use Audacity to convert your audio samples to RAW format (16 bits/sample, 44100 samples/sec, signed integer samples). playWav method does not work. only playRaw. (You can play a WAV file but the 44 byte wav header will produce a tiny fragment of noise at the begging of the sample...)
+NB: This library currently only works with `.RAW` audio files - `.WAV` files are not supported. Use Audacity to convert your audio samples to `.RAW` format (`16 bits/sample`, `44100 samples/sec`, `signed integer samples`). `playWav` method does **NOT** work. only playRaw currently works. (You can play a `.WAV` file using `playRaw(...)` but the 44 byte wav header will produce a tiny fragment of noise at the begging of the sample...)
 
 
 
