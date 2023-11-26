@@ -2,7 +2,7 @@
 [![lib-teensy41](https://github.com/newdigate/teensy-sample-flashloader/actions/workflows/teensy41_lib.yml/badge.svg)](https://github.com/newdigate/teensy-sample-flashloader/actions/workflows/teensy41_lib.yml)
 [![example-loadsample](https://github.com/newdigate/teensy-sample-flashloader/actions/workflows/teensy41_loadsample.yml/badge.svg)](https://github.com/newdigate/teensy-sample-flashloader/actions/workflows/teensy41_loadsample.yml)
 
-load `.RAW` audio samples from micro-SD card to external flash memory on teensy 4.1
+load `.RAW` audio samples from micro-SD card to external `psram` or `flash` memory on teensy 4.1
 
 **NB**: This library currently only works with `.RAW` audio files - `.WAV` files are not supported. 
 * Use Audacity to convert your audio samples to `.RAW` format (`16 bits/sample`, `44100 samples/sec`, `signed integer samples`). 
