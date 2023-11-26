@@ -3,7 +3,7 @@ project(teensys_sample_flashloader)
 
 import_arduino_library(cores ${COREPATH} avr debug util)
 import_arduino_library(SPI ${DEPSPATH}/SPI)
-import_arduino_library(SdFat ${DEPSPATH}/SdFat_PaulStoffregen/src common DigitalIO ExFatLib FatLib FsLib iostream SdCard SpiDriver)
+import_arduino_library(SdFat ${DEPSPATH}/SdFat/src common DigitalIO ExFatLib FatLib FsLib iostream SdCard SpiDriver)
 import_arduino_library(SD ${DEPSPATH}/SD/src)
 import_arduino_library(LittleFS ${DEPSPATH}/LittleFS/src)
 import_arduino_library(SerialFlash ${DEPSPATH}/SerialFlash util)
