@@ -5,7 +5,7 @@
     "keywords": "sound, audio, sd, flash, sample",
     "description": "utility to load audio samples from uSD card to external flash ram on teensy 4.1",
     "url": "https://github.com/newdigate/teensy-sample-flashloader",
-    "version": "1.0.7",
+    "version": "1.0.8",
     "export": {
       "exclude": [
         ".vscode",

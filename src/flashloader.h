@@ -31,7 +31,6 @@ extern "C" uint8_t external_psram_size;
 namespace newdigate {
 
     const uint32_t flashloader_default_sd_buffersize = 4 * 1024;
-    const uint32_t flash_offset = 0x10000;
 
     struct audiosample {
         int16_t *sampledata;
@@ -42,17 +41,11 @@ namespace newdigate {
     public:
 
         flashloader() {
-            uint8_t size = external_psram_size;
-            _bytesavailable = size * 1048576 - flash_offset;
-            memory_begin = (uint32_t *)(0x70000000 + flash_offset);
-            memory_end = (uint32_t *)(0x70000000 + flash_offset + _bytesavailable);
-            Serial.printf("SerialFlash for samples: %d\n", _bytesavailable);
+            _bytesavailable = external_psram_size * 1048576;
         }
 
         uint32_t _bytesavailable=0;
         audiosample * loadSample(const char *filename );
-        uint32_t *memory_begin, *memory_end;
-        uint32_t _head = 0;
     };
 };
 #endif
