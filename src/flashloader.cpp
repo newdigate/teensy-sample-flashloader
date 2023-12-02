@@ -25,13 +25,24 @@ namespace newdigate {
 
     audiosample * flashloader::loadSample(const char *filename ) {
         Serial.printf("Reading %s\n", filename);
+        unsigned s = ((-_lastPointer) % 512)-4;
+        Serial.printf("Align size: %x\n", s);
+        auto* align = (unsigned*)extmem_malloc (s);
+
         File f = SD.open(filename, O_READ);
         if (f) {
+            uint64_t size = f.size();
+            uint mod = size % 1024;
+            size = size + mod;
             if (f.size() < _bytesavailable) {
                 noInterrupts();
                 uint32_t total_read = 0;
-                auto *data = (int8_t*)extmem_malloc(f.size() );
-                int8_t *index = data;
+                auto *data = (uint32_t*)extmem_malloc( size + 4);
+                _lastPointer = (uint32_t)data;
+                memset(data, 0, size + 4);
+                data[0] = (01 << 24) | size; // format == 01 PCM
+
+                int8_t *index = (int8_t*)data + 4;
                 while (f.available()) {
                     size_t bytesRead = f.read(index, flashloader_default_sd_buffersize);
                     if (bytesRead == -1)
@@ -39,6 +50,7 @@ namespace newdigate {
                     total_read += bytesRead;
                     index += bytesRead;
                 }
+                memset(index, 0, mod);
                 interrupts();
                 _bytesavailable -= total_read;
 
