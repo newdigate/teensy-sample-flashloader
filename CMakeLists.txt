@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 project(teensys_sample_flashloader)
+set(CMAKE_CXX_STANDARD 17)
 
 import_arduino_library(cores ${COREPATH} avr debug util)
 import_arduino_library(SPI ${DEPSPATH}/SPI)

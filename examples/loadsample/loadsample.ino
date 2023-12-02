@@ -30,7 +30,7 @@ void setup() {
     }
     Serial.println("initialization done.");
 
-    newdigate::flashloader loader;
+    newdigate::flashloader loader(16 * 1024);
     kicksample = loader.loadSample("KICK.RAW");
 }
 
@@ -49,4 +49,8 @@ void loop() {
         }
     }
     delay(10);
+}
+
+void std::__throw_length_error(char const*) {
+
 }
