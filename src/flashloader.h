@@ -30,7 +30,7 @@ extern "C" uint8_t external_psram_size;
 
 namespace newdigate {
 
-    const uint32_t flashloader_default_sd_buffersize = 4 * 1024;
+    const uint32_t flashloader_default_sd_buffer_size = 4 * 1024;
 
     class audio_chunk_heap;
 
@@ -43,65 +43,58 @@ namespace newdigate {
 
     class audio_chunk_heap {
     private:
-        uint32_t start;
-        std::vector<bool> chunks_available;
-        std::vector<uint32_t> chunks_start;
-        std::vector<unsigned> &chunk_sizes; // in multiples of 1024 bytes, arranged from smallest to biggest!
+        uint32_t _start; // where the heap starts
+        uint32_t _size;  // size in bytes of the heap
+        uint32_t _offset; // the offset, starting at zero, accumulates by sample size in bytes as you load samples
+        uint32_t _remainder; // the remaining bytes left for allocation
+        uint32_t _index; // the current sample index, zero based.
+        std::vector<audiosample*> _samples;
+        void free(audiosample* sample) {
+            if (!sample) { Serial.println("freeing a heap that doesn't belong to you...."); return; }
+            if (sample->heap != this) { Serial.println("freeing a heap that doesn't belong to you...."); }
+            delete sample;
+        }
     public:
 
-        audio_chunk_heap(
-                std::vector<unsigned> &sizes,
-                uint32_t start) :
-            start(start),
-            chunks_available(),
-            chunks_start(),
-            chunk_sizes(sizes)
+        audio_chunk_heap(uint32_t start, uint32_t size) :
+                _start(start),
+                _size(size),
+                _offset(0),
+                _remainder(size),
+                _index(0),
+                _samples { }
         {
-            auto offset = start;
-            for(auto&& index : chunk_sizes) {
-                chunks_available.push_back(true);
-                chunks_start.push_back( offset );
-                offset += index;
-            }
             reset();
         }
 
         audio_chunk_heap(const audio_chunk_heap&& x) = delete;
 
         audiosample* allocate(size_t size) {
-            uint32_t required_chunk_size = ceil(size / 1024);
-            for(uint32_t i=0; i < chunks_available.size(); i++) {
-                if (chunks_available[i]) {
-                    if (chunk_sizes[i] > required_chunk_size) {
-                        chunks_available[i] = false; // reserve this chunk
-                        auto result = new audiosample();
-                        result->sampledata = (int16_t*)chunks_start[i];
-                        result->samplesize = size;
-                        result->handle = i;
-                        result->heap = this;
-                        return result;
-                    }
-                }
+            if (size < _remainder) {
+                auto result = new audiosample();
+                result->sampledata = (int16_t*)(_start + _offset);
+                result->samplesize = size;
+                result->handle = _index;
+                result->heap = this;
+                _index++;
+                _offset += size;
+                _remainder -= size;
+                return result;
             }
             return nullptr; // failed
         }
 
-        void free(audiosample* sample) {
-            if (!sample) return;
-            if (sample->heap != this) { Serial.println("freeing a heap that doesn't belong to you...."); }
-            if (sample->handle < chunks_available.size()) {
-                chunks_available[sample->handle] = true;
-            }
-        }
-
         void reset() {
-            for(uint32_t i=0; i < chunks_available.size(); i++) {
-                chunks_available[i] = true;
+            // discard all samples, deallocate pointers
+            for ( auto index : _samples) {
+                free(index);
             }
+            _samples.clear();
+            _offset = 0;
+            _remainder = _size;
+            // _index = 0; -- you could reset the sample index back to zero,
         }
-
     };
-
 
     class flashloader {
     public:
@@ -109,21 +102,19 @@ namespace newdigate {
         const uint32_t extmem_start = 0x70000000;
         const uint32_t heap_start = extmem_start + heap_offset;
 
-        flashloader(size_t read_buffer_size) :
+        flashloader(size_t read_buffer_size = 16*1024) :
                 _read_buffer_size(read_buffer_size),
-                chunk_sizes {512, 512, 512, 512, 1024, 1024, 1024, 1024, 1024, 1024},
                 heap_end(extmem_start + (external_psram_size * 1048576) - 1),
-                heap_size(heap_end - heap_start),
-                heap_start2(heap_start + heap_size/2 + 1),
-                heap1(chunk_sizes, heap_start),
-                heap2(chunk_sizes, heap_start2),
+                total_heap_size(heap_end - heap_start),
+                heap_start2(heap_start + total_heap_size / 2 + 1),
+                heap1(heap_start, total_heap_size / 2),
+                heap2(heap_start2, total_heap_size / 2),
                 _readHeap(&heap1),
                 _writeHeap(&heap2) {
             _bytes_available = external_psram_size * 1048576 - heap_offset;
         }
         size_t _read_buffer_size;
-        std::vector<unsigned> chunk_sizes; // in multiples of 1024 bytes!
-        uint32_t heap_end, heap_size, heap_start2;
+        uint32_t heap_end, total_heap_size, heap_start2;
         audio_chunk_heap heap1, heap2;
         audio_chunk_heap *_readHeap;
         audio_chunk_heap *_writeHeap;
@@ -156,24 +147,24 @@ namespace newdigate {
             return true; // return true when complete
         }
 
-        void free(audiosample* sample) {
-            delete sample;
-        }
-
-        // when finished with a set of audio samples,
-        // i.e once all samples have completed and once the new pattern starts playing,
-        // before the new set of samples are loaded, de-allocate the old samples
-        void beforeToggleHeap() {
-            _readHeap->reset();
-        }
-
-        void toggleHeap() {
+        // Switching between buffers!
+        // use toggle_beforeNewPatternVoicesStart and toggle_afterNewPatternStarts in pairs
+        // 1. stop all Voices;
+        // 2. call toggle_beforeNewPatternVoicesStart()
+        // 3. point voices at new heap samples, start playing
+        // 4. call toggle_afterNewPatternStarts()
+        void toggle_beforeNewPatternVoicesStart() {
+            // switch the read and write heap
             audio_chunk_heap *temp = _readHeap;
             _readHeap = _writeHeap;
             _writeHeap = temp;
         }
 
-        audiosample * loadSample(const char *filename );
+        void toggle_afterNewPatternStarts() const {
+            _writeHeap->reset();
+        }
+
+        //audiosample * loadSample(const char *filename );
     };
 };
 #endif

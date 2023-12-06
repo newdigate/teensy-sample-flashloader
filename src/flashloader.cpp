@@ -22,7 +22,7 @@
 #include "flashloader.h"
 
 namespace newdigate {
-
+/*
     audiosample * flashloader::loadSample(const char *filename ) {
         Serial.printf("Reading %s\n", filename);
         //unsigned s = ((-_lastPointer) % 512)-4;
@@ -44,7 +44,7 @@ namespace newdigate {
 
                 int8_t *index = (int8_t*)data + 4;
                 while (f.available()) {
-                    size_t bytesRead = f.read(index, flashloader_default_sd_buffersize);
+                    size_t bytesRead = f.read(index, flashloader_default_sd_buffer_size);
                     if (bytesRead == -1)
                         break;
                     total_read += bytesRead;
@@ -69,5 +69,5 @@ namespace newdigate {
         Serial.printf("not found %s\n", filename);
         return nullptr;
     }
-
+*/
 }
