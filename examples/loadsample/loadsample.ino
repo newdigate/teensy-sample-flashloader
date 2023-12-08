@@ -126,7 +126,7 @@ void loop() {
 
     for (int i=0; i < 4; i++) {
         auto voice = voices[currentReadHeap][i];
-        if (!voice->isPlaying()) {
+        if (voice && !voice->isPlaying()) {
             newdigate::audiosample *sample = samples[currentReadHeap][i];
             voice->playRaw(sample->sampledata, sample->samplesize / 2, 1);
             Serial.printf("playing... (heap:%d, index:%d)\n", currentWriteHeap, i);
@@ -150,6 +150,7 @@ void loop() {
             if (!voice->isPlaying()) {
                 voice->stop();
             }
+            voices[currentReadHeap][i] = nullptr;
         }
         if (numLoaded < 4) {
             Serial.println("WARN: not all the samples managed to load in time!");
