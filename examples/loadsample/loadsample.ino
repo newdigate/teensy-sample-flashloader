@@ -3,7 +3,6 @@
 #include <Audio.h>
 #include <TeensyVariablePlayback.h>
 #include "flashloader.h"
-
 #include <Audio.h>
 #include <Wire.h>
 #include <SPI.h>
@@ -56,7 +55,7 @@ AudioPlayArrayResmp      *voices[2][4] =  {
         { &voice1, &voice2, &voice3, &voice4 },
         { &voice5, &voice6, &voice7, &voice8 } };
 
-newdigate::flashloader loader( 16 * 1024);
+newdigate::flashloader loader(1024);
 const char * fileNames[2][4] =  {
         {"loop1.raw", "loop3.raw", "loop5.raw", "loop7.raw" },
         {"loop2.raw", "loop4.raw", "loop6.raw", "loop8.raw" } };
@@ -71,11 +70,25 @@ const double durationOfOneBeatInMilliseconds = 1000.0 * (60.0 / tempo);
 const uint32_t durationOf32BeatsInMilliseconds = durationOfOneBeatInMilliseconds * 32.0;
 
 void setup() {
+    AudioMemory(64);
     Serial.begin(9600);
-    AudioMemory(32);
+
+    //while (!Serial) { delay(100); };
+    delay(100);
+
+    /*
+    voice1.enableInterpolation(false);
+    voice2.enableInterpolation(false);
+    voice3.enableInterpolation(false);
+    voice4.enableInterpolation(false);
+    voice5.enableInterpolation(false);
+    voice6.enableInterpolation(false);
+    voice7.enableInterpolation(false);
+    voice8.enableInterpolation(false);
+    */
 
     sgtl5000_1.enable();
-    sgtl5000_1.volume(0.5f, 0.5f);
+    sgtl5000_1.volume(1, 1);
 
     Serial.print("Initializing SD card...");
     while (!SD.begin(BUILTIN_SDCARD)) {
@@ -86,14 +99,18 @@ void setup() {
 }
 
 inline void heap_switch() {
+    //Serial.printf("Heap switch init: currentWriteHeap=%d currentReadHeap=%d !\n", currentWriteHeap, currentReadHeap);
     currentWriteHeap ++;
     currentWriteHeap %= 2;
     currentReadHeap = 1 - currentWriteHeap;
     numLoaded = 0;
+    Serial.printf("Heap switch complete: currentWriteHeap=%d currentReadHeap=%d !\n", currentWriteHeap, currentReadHeap);
 }
+
 void loop() {
+    const uint32_t now = millis();
     //if (audio_sd_buffered_play_needs_loading) {
-        // load from sd to audio buffers
+    // load from sd to audio buffers
     //} else
     if (numLoaded < 4) {
         if (asyncOpening) {
@@ -106,9 +123,8 @@ void loop() {
                 return;
             }
             asyncOpening = false;
-            Serial.printf("loading '%s'...      (heap:%d, index:%d)\n", filename, currentWriteHeap, numLoaded);
+            Serial.printf("loading '%s'...      (heap:%d, index:%d, pointer:%x)\t\t", filename, currentWriteHeap, numLoaded, samples[currentWriteHeap][numLoaded]->sampledata);
         } else if (loader.continueAsyncLoadPartial()) {
-            Serial.printf("loading complete...  (heap:%d, index:%d)\n", currentWriteHeap, numLoaded);
             numLoaded++;
             asyncLoadFile.close();
             asyncOpening = true;
@@ -116,52 +132,66 @@ void loop() {
     } else if (!isPlaying) {
         isPlaying = true;
         Serial.println("Audio loaded, playback enabled!");
+
+        patternStartTime = now;
+        //const uint32_t patternEndMillis = patternStartTime + durationOf32BeatsInMilliseconds;
+        //Serial.printf("patternStartTime:  %d     patternEndTime: %d\n", patternStartTime, patternEndMillis);
         loader.toggle_beforeNewPatternVoicesStart();
         loader.toggle_afterNewPatternStarts();
-        patternStartTime = millis();
         heap_switch();
     }
 
     if (!isPlaying) return;
 
-    for (int i=0; i < 4; i++) {
-        auto voice = voices[currentReadHeap][i];
-        if (voice && !voice->isPlaying()) {
-            newdigate::audiosample *sample = samples[currentReadHeap][i];
-            voice->playRaw(sample->sampledata, sample->samplesize / 2, 1);
-            Serial.printf("playing... (heap:%d, index:%d)\n", currentWriteHeap, i);
+    if (!asyncChanging) { // dont play any new samples after the pre-pattern switch event
+        for (int i=0; i < 4; i++) {
+            auto voice = voices[currentReadHeap][i];
+            if (voice && !voice->isPlaying()) {
+                newdigate::audiosample *sample = samples[currentReadHeap][i];
+                voice->playRaw(sample->sampledata, sample->samplesize / 2, 1);
+                voice->setLoopStart(0);
+                voice->setLoopFinish(sample->samplesize/2);
+                voice->setLoopType(loop_type::looptype_repeat);
+                Serial.printf("playing... (heap:%d, index:%d - size: %d)\t\t\t%x\n", currentReadHeap, i, sample->samplesize, sample->sampledata);
+            }
         }
     }
 
-    const uint32_t now = millis();
     const uint32_t patternEndMillis = patternStartTime + durationOf32BeatsInMilliseconds;
-    // 0.5 second before the next pattern starts to play, get ready
-    if (now >= patternEndMillis - 500) {
-        // current samples can keep playing
-        if (!asyncChanging) {
-            Serial.println("Pattern change coming soon!");
-            loader.toggle_beforeNewPatternVoicesStart();
-            asyncChanging = true;
-        }
-    } else if (now >= patternEndMillis) {
+    if (now >= patternEndMillis) {
+        Serial.println("Pattern switch");
         asyncChanging = false;
         for (int i=0; i < 4; i++) {
             auto voice = voices[currentReadHeap][i];
-            if (!voice->isPlaying()) {
+            if (voice && voice->isPlaying()) {
                 voice->stop();
             }
-            voices[currentReadHeap][i] = nullptr;
+            //samples[currentReadHeap][i] = nullptr;
         }
         if (numLoaded < 4) {
             Serial.println("WARN: not all the samples managed to load in time!");
         }
-        Serial.println("Audio loaded, playback enabled!");
+
         loader.toggle_afterNewPatternStarts();
+
         patternStartTime = now;
         heap_switch();
+    } else if (now >= patternEndMillis - 500) {
+        // 0.5 second before the next pattern starts to play, get ready
+        // current samples can keep playing
+        if (!asyncChanging) {
+            Serial.println("pre-pattern switch event, pattern change coming soon!");
+            loader.toggle_beforeNewPatternVoicesStart();
+            asyncChanging = true;
+        }
     }
+
+    // my thinking re: delay(1) is to give the mcu a some time between partial loads, not sure thou...
+    delay(1);
 }
 
-void std::__throw_length_error(char const*) {
 
+// this method below is needed for c++17 - it doesn't link otherwise, but for c++14 this is not needed:
+void std::__throw_length_error(char const*) {
+    // don't worry, be happy!
 }

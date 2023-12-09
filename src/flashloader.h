@@ -25,6 +25,8 @@
 
 #include <Arduino.h>
 #include <SD.h>
+#include <vector>
+#include <Audio.h>
 
 extern "C" uint8_t external_psram_size;
 
@@ -87,7 +89,8 @@ namespace newdigate {
         void reset() {
             // discard all samples, deallocate pointers
             for ( auto index : _samples) {
-                free(index);
+                if (index)
+                    free(index);
             }
             _samples.clear();
             _offset = 0;
@@ -109,8 +112,8 @@ namespace newdigate {
                 heap_start2(heap_start + total_heap_size / 2 + 1),
                 heap1(heap_start, total_heap_size / 2),
                 heap2(heap_start2, total_heap_size / 2),
-                _readHeap(&heap1),
-                _writeHeap(&heap2) {
+                _readHeap(&heap2),
+                _writeHeap(&heap1) {
             _bytes_available = external_psram_size * 1048576 - heap_offset;
         }
         size_t _read_buffer_size;
@@ -131,16 +134,28 @@ namespace newdigate {
             auto size = _currentFile->size();
             file.seek(0);
             audiosample *sample = _writeHeap->allocate(size);
+            if (!sample) {
+                Serial.println("WARN: sample was not allocated");
+            }
             _currentReadSample = sample;
             return sample;
         }
 
         bool continueAsyncLoadPartial() {
-            if (!_currentFile && _currentReadSample) {
-                size_t bytesRead = _currentFile->read( _currentReadSample->sampledata +  _currentSampleOffset , _read_buffer_size);
+            if (_currentFile && _currentReadSample) {
+
+                //AudioNoInterrupts();
+                size_t bytesRead = _currentFile->read( (int8_t*)_currentReadSample->sampledata +  _currentSampleOffset, _read_buffer_size);
+                //AudioInterrupts();
+
                 _currentSampleOffset += bytesRead;
-                if (bytesRead == _read_buffer_size)
+                if (bytesRead == _read_buffer_size) {
                     return false; // return false because the sample is not completed loading
+                } else {
+                    Serial.printf("Complete! totalBytesRead: %d, pointer: %x\n", _currentSampleOffset,  _currentReadSample->sampledata);
+                    _currentSampleOffset = 0;
+                    return true;
+                }
             };
 
             _currentSampleOffset = 0; //reset this value for the next sample!
@@ -155,9 +170,11 @@ namespace newdigate {
         // 4. call toggle_afterNewPatternStarts()
         void toggle_beforeNewPatternVoicesStart() {
             // switch the read and write heap
+            //AudioNoInterrupts();
             audio_chunk_heap *temp = _readHeap;
             _readHeap = _writeHeap;
             _writeHeap = temp;
+            //  AudioInterrupts();
         }
 
         void toggle_afterNewPatternStarts() const {
