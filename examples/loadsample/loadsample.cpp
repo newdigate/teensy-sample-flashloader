@@ -46,7 +46,7 @@ AudioConnection          patchCord22(mxr_back_right, 0, i2s1, 1);
 AudioControlSGTL5000     sgtl5000_1;     //xy=371,652
 // GUItool: end automatically generated code
 
-audiosample  *samples[2][4];
+newdigate::audiosample  *samples[2][4];
 AudioPlayArrayResmp         *voices[2][4] =  {
         { &voice1, &voice2, &voice3, &voice4 },
         { &voice5, &voice6, &voice7, &voice8 } };
@@ -167,7 +167,7 @@ void loop() {
         for (int i=0; i < 4; i++) {
             auto voice = voices[currentReadHeap][i];
             if (voice && !voice->isPlaying()) {
-                audiosample *sample = samples[currentReadHeap][i];
+                newdigate::audiosample *sample = samples[currentReadHeap][i];
                 if (sample) {
                     voice->playRaw(sample->sampledata, sample->samplesize / 2, 1);
                     //voice->setLoopStart(0);

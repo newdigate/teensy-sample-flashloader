@@ -15,3 +15,5 @@ import_arduino_library(TeensyVariablePlayback ${DEPSPATH}/teensy-variable-playba
 
 add_subdirectory(src)
 add_subdirectory(examples/loadsample)
+add_subdirectory(examples/loadsamplewav)
+add_subdirectory(examples/loadsampleeurorack)
