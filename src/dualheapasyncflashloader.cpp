@@ -19,34 +19,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
-#ifndef TEENSY_SAMPLE_FLASHLOADER_FLASHLOADER_H
-#define TEENSY_SAMPLE_FLASHLOADER_FLASHLOADER_H
-
-#include <Arduino.h>
-#include <SD.h>
-#include "audiosample.h"
-
-extern "C" uint8_t external_psram_size;
+#include "dualheapasyncflashloader.h"
 
 namespace newdigate {
-
-    const uint32_t flashloader_default_sd_buffersize = 4 * 1024;
-
-    class flashloader {
-    public:
-
-        flashloader() {
-            _bytesavailable = external_psram_size * 1048576;
-            _lastPointer = 0x0A;
-        }
-
-        uint32_t _bytesavailable=0;
-        uint32_t _lastPointer;
-        audiosample * loadSample(const char *filename );
-
-        // load array to play via AudioPlayMemory object
-        audiosample * loadAudioPlayMemorySample(const char *filename );
-    };
-};
-#endif
+}

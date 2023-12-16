@@ -2,12 +2,10 @@
 #include <SD.h>
 #include <Audio.h>
 #include <TeensyVariablePlayback.h>
-#include "flashloader.h"
-#include <Audio.h>
+#include "dualheapasyncflashloader.h"
+#include "audiosample.h"
 #include <Wire.h>
 #include <SPI.h>
-#include <SD.h>
-#include <SerialFlash.h>
 
 // GUItool: begin automatically generated code
 AudioPlayArrayResmp      voice7;        //xy=167,520
@@ -24,7 +22,7 @@ AudioMixer4              mxr_fr2_right;         //xy=361,534
 AudioMixer4              mxr_fr2_left;         //xy=364,463
 AudioMixer4              mxr_back_left;         //xy=587,394
 AudioMixer4              mxr_back_right;         //xy=589,459
-AudioOutputI2S           i2s1;           //xy=757,443
+AudioOutputTDM           tdm;
 AudioConnection          patchCord1(voice7, 0, mxr_fr2_left, 2);
 AudioConnection          patchCord2(voice7, 1, mxr_fr2_right, 2);
 AudioConnection          patchCord3(voice6, 0, mxr_fr2_left, 1);
@@ -45,19 +43,19 @@ AudioConnection          patchCord17(mxr_fr1_left, 0, mxr_back_left, 0);
 AudioConnection          patchCord18(mxr_fr1_right, 0, mxr_back_right, 0);
 AudioConnection          patchCord19(mxr_fr2_right, 0, mxr_back_right, 1);
 AudioConnection          patchCord20(mxr_fr2_left, 0, mxr_back_left, 1);
-AudioConnection          patchCord21(mxr_back_left, 0, i2s1, 0);
-AudioConnection          patchCord22(mxr_back_right, 0, i2s1, 1);
-AudioControlSGTL5000     sgtl5000_1;     //xy=371,652
+AudioConnection          patchCord21(mxr_back_left, 0, tdm, 0);
+AudioConnection          patchCord22(mxr_back_right, 0, tdm, 2);
+AudioControlCS42448      cs42448;
 // GUItool: end automatically generated code
 
-newdigate::audiosample  *samples[2][4];
-AudioPlayArrayResmp      *voices[2][4] =  {
+audiosample  *samples[2][4];
+AudioPlayArrayResmp         *voices[2][4] =  {
         { &voice1, &voice2, &voice3, &voice4 },
         { &voice5, &voice6, &voice7, &voice8 } };
 
-newdigate::flashloader loader(1024);
+newdigate::flashloader loader(512);
 const char * fileNames[2][4] =  {
-        {"loop1.raw", "loop3.raw", "loop5.raw", "loop7.raw" },
+        {"loop1.RAW", "loop3.raw", "loop5.raw", "loop7.raw" },
         {"loop2.raw", "loop4.raw", "loop6.raw", "loop8.raw" } };
 
 File asyncLoadFile;
@@ -73,10 +71,34 @@ void setup() {
     AudioMemory(64);
     Serial.begin(9600);
 
-    //while (!Serial) { delay(100); };
+    while (!Serial) { delay(100); };
     delay(100);
 
-    /*
+    mxr_fr1_left.gain(0, 0.5);
+    mxr_fr1_left.gain(1, 0.5);
+    mxr_fr1_left.gain(2, 0.5);
+    mxr_fr1_left.gain(3, 0.5);
+
+    mxr_fr1_right.gain(0, 0.5);
+    mxr_fr1_right.gain(1, 0.5);
+    mxr_fr1_right.gain(2, 0.5);
+    mxr_fr1_right.gain(3, 0.5);
+
+    mxr_fr2_right.gain(0, 0.5);
+    mxr_fr2_right.gain(1, 0.5);
+    mxr_fr2_right.gain(2, 0.5);
+    mxr_fr2_right.gain(3, 0.5);
+
+    mxr_fr2_left.gain(0, 0.5);
+    mxr_fr2_left.gain(1, 0.5);
+    mxr_fr2_left.gain(2, 0.5);
+    mxr_fr2_left.gain(3, 0.5);
+
+    mxr_back_left.gain(0, 0.5);
+    mxr_back_left.gain(1, 0.5);
+    mxr_back_right.gain(0, 0.5);
+    mxr_back_left.gain(1, 0.5);
+
     voice1.enableInterpolation(false);
     voice2.enableInterpolation(false);
     voice3.enableInterpolation(false);
@@ -85,10 +107,10 @@ void setup() {
     voice6.enableInterpolation(false);
     voice7.enableInterpolation(false);
     voice8.enableInterpolation(false);
-    */
 
-    sgtl5000_1.enable();
-    sgtl5000_1.volume(1, 1);
+
+    cs42448.enable();
+    cs42448.volume(1);
 
     Serial.print("Initializing SD card...");
     while (!SD.begin(BUILTIN_SDCARD)) {
@@ -143,16 +165,21 @@ void loop() {
 
     if (!isPlaying) return;
 
-    if (!asyncChanging) { // dont play any new samples after the pre-pattern switch event
+    if (!asyncChanging) { // don't play any new samples after the pre-pattern switch event
         for (int i=0; i < 4; i++) {
             auto voice = voices[currentReadHeap][i];
             if (voice && !voice->isPlaying()) {
-                newdigate::audiosample *sample = samples[currentReadHeap][i];
-                voice->playRaw(sample->sampledata, sample->samplesize / 2, 1);
-                voice->setLoopStart(0);
-                voice->setLoopFinish(sample->samplesize/2);
-                voice->setLoopType(loop_type::looptype_repeat);
-                Serial.printf("playing... (heap:%d, index:%d - size: %d)\t\t\t%x\n", currentReadHeap, i, sample->samplesize, sample->sampledata);
+                audiosample *sample = samples[currentReadHeap][i];
+                if (sample) {
+                    voice->playRaw(sample->sampledata, sample->samplesize / 2, 1);
+                    //voice->setLoopStart(0);
+                    //voice->setLoopFinish(sample->samplesize/2);
+                    //voice->setLoopType(loop_type::looptype_repeat);
+
+                    Serial.printf("playing... (heap:%d, index:%d - size: %d)\t\t\t%x\n",
+                                  currentReadHeap, i,
+                                  sample->samplesize, sample->sampledata);
+                }
             }
         }
     }
@@ -190,8 +217,11 @@ void loop() {
     delay(1);
 }
 
-
 // this method below is needed for c++17 - it doesn't link otherwise, but for c++14 this is not needed:
 void std::__throw_length_error(char const*) {
     // don't worry, be happy!
+    while (true) {
+        delay(1000);
+        Serial.println("FATAL!!! something died!");
+    }
 }
