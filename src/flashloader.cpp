@@ -22,8 +22,48 @@
 #include "flashloader.h"
 
 namespace newdigate {
-/*
+
     audiosample * flashloader::loadSample(const char *filename ) {
+        Serial.printf("Reading %s\n", filename);
+        //unsigned s = ((-_lastPointer) % 512)-4;
+        //Serial.printf("Align size: %x\n", s);
+        //auto* align = (unsigned*)extmem_malloc (s);
+
+        File f = SD.open(filename, O_READ);
+        if (f) {
+            uint64_t size = f.size();
+            //uint mod = size % 1024;
+            //size = size + mod;
+            if (f.size() < _bytes_available) {
+                noInterrupts();
+                uint32_t total_read = 0;
+                auto *data = (uint32_t*)extmem_malloc( size );
+                memset(data, 0, size);
+
+                int8_t *index = (int8_t*)data + 4;
+                while (f.available()) {
+                    size_t bytesRead = f.read(index, flashloader_default_sd_buffer_size);
+                    if (bytesRead == -1)
+                        break;
+                    total_read += bytesRead;
+                    index += bytesRead;
+                }
+                interrupts();
+                _bytes_available -= total_read;
+
+                audiosample *sample = new audiosample();
+                sample->sampledata = (int16_t*)data;
+                sample->samplesize = f.size();
+
+                return sample;
+            }
+        }
+
+        Serial.printf("not found %s\n", filename);
+        return nullptr;
+    }
+
+    audiosample * flashloader::loadSampleWav(const char *filename ) {
         Serial.printf("Reading %s\n", filename);
         //unsigned s = ((-_lastPointer) % 512)-4;
         //Serial.printf("Align size: %x\n", s);
@@ -38,9 +78,9 @@ namespace newdigate {
                 noInterrupts();
                 uint32_t total_read = 0;
                 auto *data = (uint32_t*)extmem_malloc( size + 4);
-                //_lastPointer = (uint32_t)data;
                 memset(data, 0, size + 4);
-                data[0] = (01 << 24) | size; // format == 01 PCM
+                //data[0] = (01 << 24) | size; // format == 01 PCM
+                data[0] = (0x81 << 24) | (size / 2); // format == 01 PCM
 
                 int8_t *index = (int8_t*)data + 4;
                 while (f.available()) {
@@ -57,11 +97,11 @@ namespace newdigate {
                 audiosample *sample = new audiosample();
                 sample->sampledata = (int16_t*)data;
                 sample->samplesize = f.size();
-
+/*
                 Serial.printf("\tsample start %x\n", (uint32_t)data);
                 Serial.printf("\tsample size %d\n", sample->samplesize);
                 Serial.printf("\tavailable: %d\n", _bytes_available);
-
+*/
                 return sample;
             }
         }
@@ -69,5 +109,4 @@ namespace newdigate {
         Serial.printf("not found %s\n", filename);
         return nullptr;
     }
-*/
 }

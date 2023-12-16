@@ -141,12 +141,41 @@ namespace newdigate {
             return sample;
         }
 
+        audiosample * beginAsyncLoadWav(File &file) {
+            if (!file) {
+                Serial.println("WARN: file is not open!");
+                return nullptr;
+            }
+            _currentFile = &file;
+
+            auto size = _currentFile->size();
+            uint mod = size % 512;
+            //size = size + (512 - mod);
+            size = size +  (512 - mod);
+            Serial.printf("size: %x\n", size);
+            file.seek(0);
+
+            audiosample *sample = _writeHeap->allocate(size + 4);
+            if (!sample) {
+                Serial.println("WARN: sample was not allocated");
+                return nullptr;
+            }
+            memset( sample->sampledata, 0, size + 4);
+            //((uint32_t*)(sample->sampledata))[0] = (0x81 << 24) | (size / 2); // format == 81 PCM
+            ((uint32_t*)(sample->sampledata))[0] = (0x01 << 24) | (size / 2); // format == 01 PCM
+            //((uint16_t*)(sample->sampledata))[0] = 0x81 << 8 | size/2 >> 16;
+            //((uint16_t*)(sample->sampledata))[1] = size/2 & 0xFFFF;
+            _currentSampleOffset += 4;
+            _currentReadSample = sample;
+            return sample;
+        }
+
         bool continueAsyncLoadPartial() {
             if (_currentFile && _currentReadSample) {
 
-                //AudioNoInterrupts();
-                size_t bytesRead = _currentFile->read( (int8_t*)_currentReadSample->sampledata +  _currentSampleOffset, _read_buffer_size);
-                //AudioInterrupts();
+                AudioNoInterrupts();
+                size_t bytesRead = _currentFile->read( _currentReadSample->sampledata +  _currentSampleOffset, _read_buffer_size);
+                AudioInterrupts();
 
                 _currentSampleOffset += bytesRead;
                 if (bytesRead == _read_buffer_size) {
@@ -170,18 +199,19 @@ namespace newdigate {
         // 4. call toggle_afterNewPatternStarts()
         void toggle_beforeNewPatternVoicesStart() {
             // switch the read and write heap
-            //AudioNoInterrupts();
+            AudioNoInterrupts();
             audio_chunk_heap *temp = _readHeap;
             _readHeap = _writeHeap;
             _writeHeap = temp;
-            //  AudioInterrupts();
+            AudioInterrupts();
         }
 
         void toggle_afterNewPatternStarts() const {
             _writeHeap->reset();
         }
 
-        //audiosample * loadSample(const char *filename );
+        audiosample * loadSampleWav(const char *filename );
+        audiosample * loadSample(const char *filename );
     };
 };
 #endif
