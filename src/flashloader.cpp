@@ -34,7 +34,7 @@ namespace newdigate {
             uint64_t size = f.size();
             uint mod = (-size) % 1024;
             size = size + mod;
-            if (f.size() < _bytesavailable) {
+            if (f.size() < _bytes_available) {
                 noInterrupts();
                 uint32_t total_read = 0;
                 auto *data = (uint32_t*)extmem_malloc( size);
@@ -51,15 +51,16 @@ namespace newdigate {
                 }
                 memset(index, 0, mod);
                 interrupts();
-                _bytesavailable -= total_read;
+                _bytes_available -= total_read;
 
                 audiosample *sample = new audiosample();
                 sample->sampledata = (int16_t*)data;
                 sample->samplesize = f.size();
+                _samples.push_back(sample);
 
                 Serial.printf("\tsample start %x\n", (uint32_t)data);
                 Serial.printf("\tsample size %d\n", sample->samplesize);
-                Serial.printf("\tavailable: %d\n", _bytesavailable);
+                Serial.printf("\tavailable: %d\n", _bytes_available);
 
                 return sample;
             }
@@ -80,7 +81,7 @@ namespace newdigate {
             uint64_t size = f.size();
             uint mod = size % 1024;
             size = size + mod;
-            if (f.size() < _bytesavailable) {
+            if (f.size() < _bytes_available) {
                 noInterrupts();
                 uint32_t total_read = 0;
                 auto *data = (uint32_t*)extmem_malloc( size + 4);
@@ -98,11 +99,12 @@ namespace newdigate {
                 }
                 memset(index, 0, mod);
                 interrupts();
-                _bytesavailable -= total_read;
+                _bytes_available -= total_read;
 
                 audiosample *sample = new audiosample();
                 sample->sampledata = (int16_t*)data;
                 sample->samplesize = f.size();
+                _samples.push_back(sample);
 /*
                 Serial.printf("\tsample start %x\n", (uint32_t)data);
                 Serial.printf("\tsample size %d\n", sample->samplesize);

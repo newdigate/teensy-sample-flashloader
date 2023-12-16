@@ -36,17 +36,29 @@ namespace newdigate {
     class flashloader {
     public:
 
-        flashloader() {
-            _bytesavailable = external_psram_size * 1048576;
+        flashloader() : _samples() {
+            _bytes_available = external_psram_size * 1048576;
             _lastPointer = 0x0A;
         }
 
-        uint32_t _bytesavailable=0;
+        std::vector<audiosample*> _samples;
+        uint32_t _bytes_available;
         uint32_t _lastPointer;
         audiosample * loadSample(const char *filename );
 
         // load array to play via AudioPlayMemory object
         audiosample * loadAudioPlayMemorySample(const char *filename );
+
+        // free all existing samples
+        void reset() {
+            AudioNoInterrupts();
+            for (auto && sample : _samples){
+                extmem_free(sample->sampledata);
+                _bytes_available += sample->samplesize;
+            }
+            _samples.clear();
+            AudioInterrupts();
+        }
     };
 };
 #endif
