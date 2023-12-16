@@ -50,7 +50,7 @@ namespace newdigate {
         audiosample * loadAudioPlayMemorySample(const char *filename );
 
         // free all existing samples
-        void reset() {
+        void clearSamples() {
             AudioNoInterrupts();
             for (auto && sample : _samples){
                 extmem_free(sample->sampledata);
