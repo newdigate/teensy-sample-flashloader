@@ -47,7 +47,12 @@ namespace newdigate {
         audiosample *allocate(unsigned int size) {
             if (size < _remainder) {
                 auto result = new audiosample();
-                result->sampledata = (__int16_t *) (_start + _offset);
+#ifdef BUILD_FOR_LINUX
+                result->sampledata = new int16_t[size];
+#else
+                result->sampledata = (int16_t *) (_start + _offset);
+#endif
+
                 result->samplesize = size;
                 result->handle = _index;
                 _index++;

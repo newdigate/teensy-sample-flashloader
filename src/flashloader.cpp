@@ -25,9 +25,6 @@ namespace newdigate {
 
     audiosample * flashloader::loadSample(const char *filename ) {
         Serial.printf("Reading %s\n", filename);
-        unsigned s = ((-_lastPointer) % 512)-4;
-        Serial.printf("Align size: %x\n", s);
-        auto* align = (unsigned*)extmem_malloc (s);
 
         File f = SD.open(filename, O_READ);
         if (f) {
@@ -37,11 +34,15 @@ namespace newdigate {
             if (f.size() < _bytes_available) {
                 noInterrupts();
                 uint32_t total_read = 0;
-                auto *data = (uint32_t*)extmem_malloc( size);
-                _lastPointer = (uint32_t)data;
+#ifdef BUILD_FOR_LINUX
+                auto data = new int16_t[size/2];
+#else
+                auto data = static_cast<int16_t *>(extmem_malloc(size));
+#endif
+
                 memset(data, 0, size + 4);
 
-                int8_t *index = (int8_t*)data + 4;
+                auto *index = reinterpret_cast<uint8_t *>(data);
                 while (f.available()) {
                     size_t bytesRead = f.read(index, flashloader_default_sd_buffersize);
                     if (bytesRead == -1)
@@ -53,12 +54,12 @@ namespace newdigate {
                 interrupts();
                 _bytes_available -= total_read;
 
-                audiosample *sample = new audiosample();
-                sample->sampledata = (int16_t*)data;
+                auto *sample = new audiosample();
+                sample->sampledata = data;
                 sample->samplesize = f.size();
                 _samples.push_back(sample);
 
-                Serial.printf("\tsample start %x\n", (uint32_t)data);
+                Serial.printf("\tsample start %x\n", data);
                 Serial.printf("\tsample size %d\n", sample->samplesize);
                 Serial.printf("\tavailable: %d\n", _bytes_available);
 
@@ -84,7 +85,11 @@ namespace newdigate {
             if (f.size() < _bytes_available) {
                 noInterrupts();
                 uint32_t total_read = 0;
+#ifdef BUILD_FOR_LINUX
+                auto *data = new uint32_t[size + 4];
+#else
                 auto *data = (uint32_t*)extmem_malloc( size + 4);
+#endif
                 memset(data, 0, size + 4);
                 //data[0] = (01 << 24) | size; // format == 01 PCM
                 data[0] = (0x81 << 24) | (size / 2); // format == 01 PCM

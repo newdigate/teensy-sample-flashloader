@@ -1,0 +1,52 @@
+message("building for linux...")
+add_definitions(-DBUILD_FOR_LINUX)
+SET(teensy_sampleflashloader_VERSION 1.0.0)
+set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include/teensy_sampleflashloader/)
+set(LIB_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/lib/teensy_sampleflashloader )
+
+find_package(teensy_x86_stubs)
+include_directories(${teensy_x86_stubs_INCLUDE_DIR})
+
+find_package(teensy_audio_x86_stubs)
+include_directories(${teensy_audio_x86_stubs_INCLUDE_DIR})
+
+find_package(teensy_x86_sd_stubs)
+include_directories(${teensy_x86_sd_stubs_INCLUDE_DIR})
+
+add_library(teensy_sampleflashloader STATIC
+        ${HEADERS}
+        ${SOURCES}
+        )
+
+set_target_properties(teensy_sampleflashloader PROPERTIES PUBLIC_HEADER "${HEADERS}")
+set_target_properties(teensy_sampleflashloader PROPERTIES LINKER_LANGUAGE C)
+
+include(CMakePackageConfigHelpers)
+configure_package_config_file(../cmake/teensy_sampleflashloader.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/teensy_sampleflashloaderConfig.cmake
+        INSTALL_DESTINATION ${LIB_INSTALL_DIR}/teensy_sampleflashloader/cmake
+        PATH_VARS)
+
+write_basic_package_version_file(
+        ${CMAKE_CURRENT_BINARY_DIR}/teensy_sampleflashloaderConfigVersion.cmake
+        VERSION ${teensy_sampleflashloader_VERSION}
+        COMPATIBILITY SameMajorVersion )
+
+install(TARGETS teensy_sampleflashloader DESTINATION
+        LIBRARY DESTINATION ${LIB_INSTALL_DIR}
+        ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
+        PUBLIC_HEADER DESTINATION "include/teensy_sampleflashloader"
+        )
+
+install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/teensy_sampleflashloaderConfig.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/teensy_sampleflashloaderConfigVersion.cmake
+        ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/uninstall.cmake
+        DESTINATION "lib/cmake/teensy_sampleflashloader" )
+
+##
+# copied from: https://gist.github.com/royvandam/3033428
+# Add uninstall target
+# Requirements: Copy the uninstall.cmake file to the appropriate CMAKE_MODULE_PATH.
+add_custom_target(uninstall
+        "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/uninstall.cmake")

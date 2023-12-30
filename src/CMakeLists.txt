@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 3.5)
 project(sampleflashloader)
 
-set(SOURCES flashloader.cpp dualheapasyncflashloader.cpp)
+set(SOURCES flashloader.cpp dualheapasyncflashloader.cpp )
 set(HEADERS flashloader.h dualheapasyncflashloader.h audiosample.h audiochunkheap.h TeensyAudioFlashLoader.h)
 
-teensy_add_library(sampleflashloader ${SOURCES})
+if (NOT DEFINED TEENSY_VERSION)
+    include(CMakeLists.linux.cmake.in)
+else()
+    teensy_add_library(sampleflashloader ${SOURCES})
+endif()

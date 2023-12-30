@@ -53,7 +53,12 @@ namespace newdigate {
         void clearSamples() {
             AudioNoInterrupts();
             for (auto && sample : _samples){
+#ifdef BUILD_FOR_LINUX
+                delete [] sample->sampledata;
+                delete sample;
+#else
                 extmem_free(sample->sampledata);
+#endif
                 _bytes_available += sample->samplesize;
             }
             _samples.clear();
