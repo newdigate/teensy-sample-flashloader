@@ -107,11 +107,60 @@ namespace newdigate {
             return sample;
         }
 
-        bool continueAsyncLoadPartial() {
-            if (_currentFile && _currentReadSample) {
 
+        audiosample *loadSample(const char *filename ) {
+            Serial.printf("Reading %s\n", filename);
+
+            File f = SD.open(filename, O_READ);
+            if (f) {
+                uint64_t size = f.size();
+                uint mod = (-size) % 1024;
+                size = size + mod;
+                if (f.size() < _bytes_available) {
+                    noInterrupts();
+                    uint32_t total_read = 0;
+#ifdef BUILD_FOR_LINUX
+                    auto data = new int16_t[size/2];
+#else
+                    auto data = static_cast<int16_t *>(extmem_malloc(size));
+#endif
+
+                    memset(data, 0, size + 4);
+
+                    auto *index = reinterpret_cast<uint8_t *>(data);
+                    while (f.available()) {
+                        size_t bytesRead = f.read(index, flashloader_default_sd_buffer_size);
+                        if (bytesRead == -1)
+                            break;
+                        total_read += bytesRead;
+                        index += bytesRead;
+                    }
+                    memset(index, 0, mod);
+                    interrupts();
+                    _bytes_available -= total_read;
+
+                    auto *sample = new audiosample();
+                    sample->sampledata = data;
+                    sample->samplesize = f.size();
+                    //_samples.push_back(sample);
+
+                    Serial.printf("\tsample start %x\n", data);
+                    Serial.printf("\tsample size %d\n", sample->samplesize);
+                    Serial.printf("\tavailable: %d\n", _bytes_available);
+
+                    return sample;
+                }
+            }
+
+            Serial.printf("not found %s\n", filename);
+            return nullptr;
+        }
+
+        bool continueAsyncLoadPartial() {
+            if (_currentFile && _currentReadSample && _currentFile->available()) {
+                auto *index = reinterpret_cast<uint8_t *>(_currentReadSample->sampledata);
                 AudioNoInterrupts();
-                size_t bytesRead = _currentFile->read( _currentReadSample->sampledata +  _currentSampleOffset, _read_buffer_size);
+                size_t bytesRead = _currentFile->read( index + _currentSampleOffset, _read_buffer_size);
                 AudioInterrupts();
 
                 _currentSampleOffset += bytesRead;
