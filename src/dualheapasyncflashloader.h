@@ -66,17 +66,26 @@ namespace newdigate {
 
         // always load to the next heap.
         audiosample * beginAsyncLoad(File &file) {
+            return beginAsyncLoad( file, _writeHeap);
+        }
+
+        audiosample * beginAsyncLoadToReadHeap(File &file) {
+            return beginAsyncLoad( file, _readHeap);
+        }
+
+        audiosample * beginAsyncLoad(File &file, audio_chunk_heap* heap) {
             if (!file) return nullptr;
             _currentFile = &file;
             auto size = _currentFile->size();
             file.seek(0);
-            audiosample *sample = _writeHeap->allocate(size);
+            audiosample *sample = heap->allocate(size);
             if (!sample) {
                 Serial.println("WARN: sample was not allocated");
             }
             _currentReadSample = sample;
             return sample;
         }
+
 
         audiosample * beginAsyncLoadWav(File &file) {
             if (!file) {
